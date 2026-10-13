@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เช็คสถานะคิวบริการ</title>
+  <title>ระบบตรวจสอบสถานะคิว</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -13,177 +13,183 @@
 </head>
 <body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
 
-  <!-- โซนกรอก Passcode -->
-  <div id="loginBox" class="bg-slate-900 border border-slate-800 p-8 rounded-3xl shadow-2xl w-full max-w-md text-center">
-    <div class="w-16 h-16 bg-indigo-500/10 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-indigo-500/20">
-      <i class="fa-solid fa-key text-2xl"></i>
-    </div>
-    <h1 class="text-2xl font-bold mb-1">ตรวจสอบคิวงาน</h1>
-    <p class="text-slate-400 text-sm mb-6">กรอกรหัส Passcode คิวที่คุณได้รับจากร้าน</p>
+  <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
+    <!-- Glow Effect Background -->
+    <div class="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-    <input type="text" id="passcodeInput" placeholder="กรอก Passcode คิว..." 
-      class="w-full bg-slate-950 border border-slate-800 text-center text-lg py-3 px-4 rounded-xl mb-4 focus:outline-none focus:border-indigo-500 transition uppercase tracking-wider">
-    
-    <button onclick="fetchQueueData()" id="btnSubmit" 
-      class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-3 rounded-xl transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2">
-      <span>ตรวจสอบสถานะ</span>
-    </button>
-  </div>
-
-  <!-- โซนแสดงรายละเอียดคิว -->
-  <div id="statusBox" class="hidden bg-slate-900 border border-slate-800 p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-lg">
-    
-    <!-- ส่วนหัวคิว & สถานะไอดี -->
-    <div class="flex justify-between items-start border-b border-slate-800 pb-5 mb-5">
-      <div>
-        <span id="queueBadge" class="bg-indigo-500/10 text-indigo-400 text-xs font-semibold px-3 py-1 rounded-full border border-indigo-500/20">
-          คิวที่ #--
-        </span>
-        <h2 id="custName" class="text-xl font-bold mt-2">ชื่อลูกค้า</h2>
-        <p id="gameId" class="text-slate-400 text-xs mt-0.5"><i class="fa-solid fa-user-tag mr-1"></i>ID: --</p>
+    <div class="text-center mb-6">
+      <div class="w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl border border-indigo-500/20">
+        <i class="fa-solid fa-list-check"></i>
       </div>
-
-      <div id="onlineStatusBadge" class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-full border border-slate-800">
-        <span class="w-2.5 h-2.5 rounded-full bg-slate-600"></span>
-        <span class="text-xs text-slate-400">Offline</span>
-      </div>
+      <h1 class="text-xl font-bold text-white">ตรวจสอบสถานะคิวงาน</h1>
+      <p class="text-slate-400 text-xs mt-1">กรอก Passcode เพื่อเช็คสถานะการดำเนินงาน</p>
     </div>
 
-    <!-- สถานะงานทำอยู่/เสร็จแล้ว -->
-    <div class="bg-slate-950/50 p-4 rounded-2xl border border-slate-800/80 mb-5">
-      <span class="text-xs text-slate-500 block mb-1">สถานะปัจจุบัน</span>
-      <div id="workStatus" class="text-lg font-semibold text-amber-400 flex items-center gap-2">
-        <i class="fa-solid fa-spinner animate-spin"></i> กำลังโหลด...
-      </div>
-    </div>
-
-    <!-- หลอดความคืบหน้า Progress Bar -->
-    <div class="mb-5 bg-slate-950/60 p-4 rounded-2xl border border-slate-800/80">
-      <div class="flex justify-between text-xs mb-2">
-        <span class="text-slate-400">ความคืบหน้างาน</span>
-        <span id="progressText" class="text-indigo-400 font-bold">0%</span>
-      </div>
-      <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-        <div id="progressBar" class="bg-indigo-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
-      </div>
-    </div>
-
-    <!-- รายการสั่งซื้อ / Checklist -->
-    <div class="mb-6">
-      <span class="text-xs text-slate-500 block mb-3">รายการสั่งทำ</span>
-      <div id="taskList" class="space-y-2"></div>
-    </div>
-
-    <!-- ปุ่มแอคชั่น -->
-    <div class="flex gap-3 border-t border-slate-800 pt-5">
-      <a href="https://facebook.com" target="_blank" 
-        class="flex-1 bg-blue-600 hover:bg-blue-500 text-white font-medium py-3 rounded-xl text-sm transition flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20">
-        <i class="fa-brands fa-facebook-f"></i> ติดต่อแอดมิน
-      </a>
-      <button onclick="copyQueueLink()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-4 py-3 rounded-xl text-sm transition flex items-center gap-2" title="คัดลอกลิงก์คิว">
-        <i class="fa-solid fa-link"></i> ลิงก์คิว
-      </button>
-      <button onclick="location.href=window.location.pathname" class="bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium px-4 py-3 rounded-xl text-sm transition">
-        ย้อนกลับ
+    <!-- ช่องค้นหาด้วย Passcode -->
+    <div class="flex gap-2 mb-6">
+      <input type="text" id="passcodeInput" placeholder="กรอก Passcode เช่น 11" 
+        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition text-center font-mono text-indigo-400 font-bold uppercase tracking-widest">
+      <button onclick="searchQueue()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 rounded-2xl text-sm font-medium transition flex items-center justify-center">
+        <i class="fa-solid fa-magnifying-glass"></i>
       </button>
     </div>
+
+    <!-- ส่วนแสดงข้อมูลคิว -->
+    <div id="resultContainer" class="hidden space-y-4">
+      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
+        
+        <!-- หัวข้อคิว & สถานะ Online -->
+        <div class="flex justify-between items-start mb-3 border-b border-slate-800 pb-3">
+          <div>
+            <span id="queueNoBadge" class="bg-indigo-500/10 text-indigo-400 text-xs font-bold px-2.5 py-1 rounded-full border border-indigo-500/20">
+              คิวที่ #-
+            </span>
+            <h2 id="custNameText" class="text-base font-bold mt-2 text-white">-</h2>
+            <p id="gameIdText" class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-gamepad mr-1"></i>ID Game: -</p>
+          </div>
+          <div id="onlineBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
+            <span class="w-2 h-2 rounded-full bg-slate-500"></span>
+            Offline
+          </div>
+        </div>
+
+        <!-- สถานะการทำงาน -->
+        <div class="mb-4">
+          <span class="text-xs text-slate-500 block mb-1">สถานะปัจจุบัน:</span>
+          <div id="statusBadge" class="inline-block bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-medium px-3 py-1 rounded-xl text-xs">
+            กำลังดำเนินการ
+          </div>
+        </div>
+
+        <!-- รายการงานที่ต้องทำ & Progress -->
+        <div>
+          <div class="flex justify-between text-xs text-slate-400 mb-1.5">
+            <span>ความคืบหน้างาน</span>
+            <span id="progressPercent">0%</span>
+          </div>
+          
+          <!-- Progress Bar -->
+          <div class="w-full bg-slate-900 rounded-full h-2 mb-3 overflow-hidden border border-slate-800">
+            <div id="progressBar" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+          </div>
+
+          <div id="taskList" class="space-y-2">
+            <!-- รายการงานย่อยจะแสดงตรงนี้ -->
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- กล่องแจ้งเตือนกรณีไม่พบข้อมูล -->
+    <div id="notFoundBox" class="hidden text-center py-8 text-slate-500 text-xs">
+      <i class="fa-solid fa-circle-exclamation text-2xl mb-2 text-slate-600 block"></i>
+      ไม่พบข้อมูลคิวสำหรับ Passcode นี้
+    </div>
+
+    <!-- โหลดดิ้ง -->
+    <div id="loadingBox" class="hidden text-center py-8 text-slate-500 text-xs">
+      <i class="fa-solid fa-circle-notch animate-spin text-xl text-indigo-500 mb-2 block"></i>
+      กำลังค้นหาข้อมูล...
+    </div>
+
   </div>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyQw5wXcf5XcMRs8JcgBNra5KdWT5j0JFxhxsTbUAifSpURG-ENsEJ1Wrc-1eH9lD7o/exec";
-    let currentPasscode = "";
 
-    // เช็คกรณีส่งคิวผ่าน URL Parameter (เช่น index.html?code=11)
-    window.onload = () => {
+    // อ่านค่าตัวแปร ?code= จาก URL (ถ้าน้องส่งลิงก์ให้ลูกค้าดูตรงๆ)
+    window.addEventListener('DOMContentLoaded', () => {
       const urlParams = new URLSearchParams(window.location.search);
-      const codeParam = urlParams.get('code');
-      if(codeParam) {
-        document.getElementById('passcodeInput').value = codeParam;
-        fetchQueueData();
+      const code = urlParams.get('code');
+      if (code) {
+        document.getElementById('passcodeInput').value = code;
+        searchQueue();
       }
-    };
+    });
 
-    async function fetchQueueData() {
-      const code = document.getElementById('passcodeInput').value.trim();
-      if(!code) return alert('กรุณากรอก Passcode คิวของคุณ');
+    async function searchQueue() {
+      const passcode = document.getElementById('passcodeInput').value.trim();
+      if (!passcode) return;
 
-      currentPasscode = code;
-      const btn = document.getElementById('btnSubmit');
-      btn.innerHTML = `<i class="fa-solid fa-circle-notch animate-spin"></i> กำลังดึงข้อมูล...`;
-      btn.disabled = true;
+      const resultContainer = document.getElementById('resultContainer');
+      const notFoundBox = document.getElementById('notFoundBox');
+      const loadingBox = document.getElementById('loadingBox');
+
+      resultContainer.classList.add('hidden');
+      notFoundBox.classList.add('hidden');
+      loadingBox.classList.remove('hidden');
 
       try {
         const res = await fetch(API_URL);
-        const data = await res.json();
-        
-        const myQueue = data.find(item => String(item.Passcode).toLowerCase() === code.toLowerCase());
+        const queues = await res.json();
+        loadingBox.classList.add('hidden');
 
-        if(!myQueue) {
-          alert('ไม่พบข้อมูลคิว หรือ Passcode ไม่ถูกต้อง!');
-          btn.innerHTML = `<span>ตรวจสอบสถานะ</span>`;
-          btn.disabled = false;
-          return;
-        }
+        // ค้นหาคิวที่มี Passcode ตรงกัน (เปรียบเทียบแบบไม่สนอักษรตัวเล็ก-ใหญ่)
+        const matched = queues.find(q => String(q.Passcode).trim().toLowerCase() === passcode.toLowerCase());
 
-        document.getElementById('loginBox').classList.add('hidden');
-        document.getElementById('statusBox').classList.remove('hidden');
+        if (matched) {
+          document.getElementById('queueNoBadge').innerText = `คิวที่ #${matched.QueueNo}`;
+          document.getElementById('custNameText').innerText = matched.CustomerName || 'ลูกค้า';
+          document.getElementById('gameIdText').innerHTML = `<i class="fa-solid fa-gamepad mr-1"></i>ID Game: ${matched.GameID || '-'}`;
+          document.getElementById('statusBadge').innerText = matched.Status || 'กำลังทำงาน';
 
-        document.getElementById('queueBadge').innerText = `คิวที่ #${myQueue.QueueNo}`;
-        document.getElementById('custName').innerText = myQueue.CustomerName;
-        document.getElementById('gameId').innerHTML = `<i class="fa-solid fa-user-tag mr-1"></i>ID: ${myQueue.GameID || '-'}`;
-        document.getElementById('workStatus').innerText = myQueue.Status || 'รอดำเนินการ';
+          // จัดการแสดงผลสถานะไอดี Online/Offline
+          const isOnline = String(matched.OnlineStatus).toLowerCase() === 'online';
+          const onlineBadge = document.getElementById('onlineBadge');
+          if (isOnline) {
+            onlineBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+            onlineBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online`;
+          } else {
+            onlineBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700";
+            onlineBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span> Offline`;
+          }
 
-        // สถานะ Online/Offline
-        const isOnline = String(myQueue.OnlineStatus).toLowerCase() === 'online';
-        document.getElementById('onlineStatusBadge').innerHTML = `
-          <span class="w-2.5 h-2.5 rounded-full ${isOnline ? 'bg-emerald-500 animate-pulse' : 'bg-slate-600'}"></span>
-          <span class="text-xs ${isOnline ? 'text-emerald-400 font-medium' : 'text-slate-400'}">${isOnline ? 'ID Online' : 'ID Offline'}</span>
-        `;
+          // แปลงรายการงานย่อย (TasksJson)
+          let tasks = [];
+          if (matched.TasksJson) {
+            try { tasks = typeof matched.TasksJson === 'string' ? JSON.parse(matched.TasksJson) : matched.TasksJson; } catch(e){}
+          }
 
-        // อ่านรายการ Tasks และคำนวณ Progress Bar
-        let tasks = [];
-        if (myQueue.TasksJson) {
-          try {
-            tasks = typeof myQueue.TasksJson === 'string' ? JSON.parse(myQueue.TasksJson) : myQueue.TasksJson;
-          } catch(e) { tasks = []; }
-        }
+          const taskList = document.getElementById('taskList');
+          taskList.innerHTML = '';
+          let doneCount = 0;
 
-        const taskListEl = document.getElementById('taskList');
-        taskListEl.innerHTML = '';
+          if (tasks.length > 0) {
+            tasks.forEach(t => {
+              if (t.done) doneCount++;
+              const item = document.createElement('div');
+              item.className = `flex items-center justify-between p-2.5 rounded-xl border text-xs ${
+                t.done 
+                  ? 'bg-slate-900/50 border-slate-800/80 text-slate-500 line-through' 
+                  : 'bg-slate-900 border-slate-800 text-slate-200'
+              }`;
+              item.innerHTML = `
+                <span>${t.name}</span>
+                <i class="${t.done ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-regular fa-circle text-slate-600'} text-sm"></i>
+              `;
+              taskList.appendChild(item);
+            });
 
-        let completedCount = 0;
-        if(tasks.length === 0) {
-          taskListEl.innerHTML = `<div class="text-xs text-slate-500 py-2">ไม่มีรายการเพิ่มเติม</div>`;
+            // คำนวณ % ความคืบหน้า
+            const percent = Math.round((doneCount / tasks.length) * 100);
+            document.getElementById('progressPercent').innerText = `${percent}%`;
+            document.getElementById('progressBar').style.width = `${percent}%`;
+          } else {
+            taskList.innerHTML = `<div class="text-xs text-slate-500 text-center py-2">ไม่มีรายการสั่งทำย่อย</div>`;
+            document.getElementById('progressPercent').innerText = `0%`;
+            document.getElementById('progressBar').style.width = `0%`;
+          }
+
+          resultContainer.classList.remove('hidden');
         } else {
-          tasks.forEach(task => {
-            if(task.done) completedCount++;
-            taskListEl.innerHTML += `
-              <div class="flex items-center justify-between bg-slate-950 p-3.5 rounded-xl border border-slate-800">
-                <span class="text-sm ${task.done ? 'line-through text-slate-500' : 'text-slate-200'}">${task.name}</span>
-                ${task.done 
-                  ? '<span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-lg border border-emerald-500/20 flex items-center gap-1"><i class="fa-solid fa-check"></i> เสร็จแล้ว</span>' 
-                  : '<span class="text-xs bg-amber-500/10 text-amber-400 px-2.5 py-1 rounded-lg border border-amber-500/20 flex items-center gap-1"><i class="fa-solid fa-clock"></i> รอดำเนินการ</span>'}
-              </div>
-            `;
-          });
+          notFoundBox.classList.remove('hidden');
         }
-
-        // คำนวณ % Progress
-        const percent = tasks.length > 0 ? Math.round((completedCount / tasks.length) * 100) : 0;
-        document.getElementById('progressBar').style.width = `${percent}%`;
-        document.getElementById('progressText').innerText = `${percent}% (${completedCount}/${tasks.length})`;
 
       } catch (err) {
-        alert('เกิดข้อผิดพลาดในการดึงข้อมูล กรุณาลองใหม่อีกครั้ง');
-        btn.innerHTML = `<span>ตรวจสอบสถานะ</span>`;
-        btn.disabled = false;
+        loadingBox.classList.add('hidden');
+        notFoundBox.classList.remove('hidden');
       }
-    }
-
-    function copyQueueLink() {
-      const shareUrl = `${window.location.origin}${window.location.pathname}?code=${currentPasscode}`;
-      navigator.clipboard.writeText(shareUrl);
-      alert('คัดลอกลิงก์คิวเข้าคลิปบอร์ดแล้ว! สามารถส่งให้ลูกค้าเข้าดูได้ทันที');
     }
   </script>
 </body>

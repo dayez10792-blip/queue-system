@@ -46,7 +46,7 @@
         <div class="grid grid-cols-2 gap-3">
           <div>
             <label class="text-xs text-slate-400 block mb-1">เลขคิว (QueueNo)</label>
-            <input type="number" id="newQueueNo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm">
+            <input type="number" id="newQueueNo" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm" placeholder="เว้นว่างไว้เพื่อรันอัตโนมัติ">
           </div>
           <div>
             <label class="text-xs text-slate-400 block mb-1">Passcode (สุ่มให้อัตโนมัติ)</label>
@@ -103,6 +103,11 @@
         const queues = await res.json();
         container.innerHTML = '';
 
+        if (!queues || queues.length === 0) {
+          container.innerHTML = `<div class="text-center py-12 text-slate-500">ยังไม่มีข้อมูลคิวในระบบ</div>`;
+          return;
+        }
+
         queues.forEach((q) => {
           let tasks = [];
           if (q.TasksJson) {
@@ -118,7 +123,7 @@
                 <span class="bg-indigo-500/10 text-indigo-400 font-bold px-3 py-1 rounded-full text-xs border border-indigo-500/20">
                   คิวที่ #${q.QueueNo}
                 </span>
-                <h3 class="text-lg font-bold mt-2">${q.CustomerName} <span class="text-xs font-normal text-slate-400">(Passcode: ${q.Passcode})</span></h3>
+                <h3 class="text-lg font-bold mt-2">${q.CustomerName || '-'} <span class="text-xs font-normal text-slate-400">(Passcode: ${q.Passcode || '-'})</span></h3>
                 <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-address-book mr-1"></i>ติดต่อ: ${q.Contact || '-'}</p>
                 <p class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-gamepad mr-1"></i>ID Game: ${q.GameID || '-'}</p>
               </div>
@@ -126,7 +131,7 @@
               <div class="space-y-2 text-right md:w-64">
                 <div>
                   <label class="text-xs text-slate-500 block mb-1 text-left">สถานะการทำงาน</label>
-                  <input type="text" id="status-${q.QueueNo}" value="${q.Status || ''}" 
+                  <input type="text" id="status-${q.QueueNo}" value="${q.Status || 'กำลังทำงาน'}" 
                     class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-sm text-slate-200">
                 </div>
                 <div>
@@ -151,10 +156,16 @@
               </div>
             </div>
 
-            <button onclick="saveQueue(${q.QueueNo})" id="btn-save-${q.QueueNo}" 
-              class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-xl text-sm transition">
-              บันทึกการเปลี่ยนแปลง
-            </button>
+            <div class="flex gap-2">
+              <button onclick="saveQueue(${q.QueueNo})" id="btn-save-${q.QueueNo}" 
+                class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-medium py-2 rounded-xl text-sm transition">
+                บันทึกการเปลี่ยนแปลง
+              </button>
+              <button onclick="deleteQueue(${q.QueueNo})" id="btn-delete-${q.QueueNo}" 
+                class="bg-rose-600/20 hover:bg-rose-600 text-rose-400 hover:text-white border border-rose-500/30 font-medium px-4 py-2 rounded-xl text-sm transition flex items-center gap-1.5">
+                <i class="fa-solid fa-trash-can"></i> ลบคิว
+              </button>
+            </div>
           `;
           container.appendChild(card);
         });
@@ -181,10 +192,20 @@
         updatedTasks.push({ name: taskLabels[index].innerText, done: cb.checked });
       });
 
-      const payload = { QueueNo: queueNo, Status: newStatus, OnlineStatus: newOnline, TasksJson: JSON.stringify(updatedTasks) };
+      const payload = { 
+        action: "updateQueue",
+        QueueNo: queueNo, 
+        Status: newStatus, 
+        OnlineStatus: newOnline, 
+        TasksJson: JSON.stringify(updatedTasks) 
+      };
 
       try {
-        await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+        await fetch(API_URL, { 
+          method: "POST", 
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(payload) 
+        });
         alert(`อัปเดตข้อมูลคิวที่ #${queueNo} เรียบร้อยแล้ว!`);
       } catch (e) {
         alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล");
@@ -192,6 +213,36 @@
 
       btn.innerText = "บันทึกการเปลี่ยนแปลง";
       btn.disabled = false;
+    }
+
+    // ฟังก์ชันสั่งลบคิว
+    async function deleteQueue(queueNo) {
+      if (!confirm(`คุณต้องการลบคิวที่ #${queueNo} ออกใช่หรือไม่? (ลบแล้วข้อมูลใน Google Sheet จะหายไปทันที)`)) {
+        return;
+      }
+
+      const btn = document.getElementById(`btn-delete-${queueNo}`);
+      btn.innerText = "กำลังลบ...";
+      btn.disabled = true;
+
+      const payload = {
+        action: "deleteQueue",
+        QueueNo: queueNo
+      };
+
+      try {
+        await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(payload)
+        });
+        alert(`ลบคิวที่ #${queueNo} สำเร็จ!`);
+        loadAllQueues(); // โหลดรายการคิวใหม่
+      } catch (e) {
+        alert("เกิดข้อผิดพลาดในการลบคิว");
+        btn.innerText = "ลบคิว";
+        btn.disabled = false;
+      }
     }
 
     // Modal Control & Add New Queue
@@ -203,7 +254,7 @@
     }
     function closeModal() { document.getElementById('addModal').classList.add('hidden'); }
     function generatePasscode() {
-      document.getElementById('newPasscode').value = Math.random().toString(36).substring(2, 7).toUpperCase();
+      document.getElementById('newPasscode').value = Math.floor(10 + Math.random() * 90).toString();
     }
     function addNewTaskInput() {
       const div = document.createElement('div');
@@ -233,18 +284,23 @@
       });
 
       const payload = {
+        action: "addQueue",
         QueueNo: queueNo,
         Passcode: passcode,
         CustomerName: custName,
         Contact: contact,
         GameID: gameID,
-        Status: "กำลังดำเนินการ",
+        Status: "กำลังทำงาน",
         OnlineStatus: "Offline",
         TasksJson: JSON.stringify(tasks)
       };
 
       try {
-        await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+        await fetch(API_URL, { 
+          method: "POST", 
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(payload) 
+        });
         alert("เพิ่มคิวใหม่สำเร็จ!");
         closeModal();
         loadAllQueues();
