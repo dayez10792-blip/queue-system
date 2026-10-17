@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ระบบตรวจสอบสถานะคิว</title>
+  <title>ระบบเช็คสถานะคิวงาน</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
@@ -11,184 +11,209 @@
     body { font-family: 'Kanit', sans-serif; }
   </style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8">
 
-  <div class="w-full max-w-md bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl relative overflow-hidden">
-    <!-- Glow Effect Background -->
-    <div class="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-    <div class="text-center mb-6">
-      <div class="w-12 h-12 bg-indigo-600/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-xl border border-indigo-500/20">
-        <i class="fa-solid fa-list-check"></i>
-      </div>
-      <h1 class="text-xl font-bold text-white">ตรวจสอบสถานะคิวงาน</h1>
-      <p class="text-slate-400 text-xs mt-1">กรอก Passcode เพื่อเช็คสถานะการดำเนินงาน</p>
+  <div class="max-w-2xl mx-auto space-y-6">
+    
+    <!-- หัวข้อระบบ -->
+    <div class="text-center space-y-2">
+      <h1 class="text-3xl font-bold text-indigo-400"><i class="fa-solid fa-list-check mr-2"></i>ตรวจสอบสถานะคิวงาน</h1>
+      <p class="text-slate-400 text-sm">กรอก Passcode 6 หลัก เพื่อค้นหาคิวของคุณ หรือคลิกปุ่มด้านล่างเพื่อดูประวัติงานที่ทำเสร็จแล้ว</p>
     </div>
 
-    <!-- ช่องค้นหาด้วย Passcode -->
-    <div class="flex gap-2 mb-6">
-      <input type="text" id="passcodeInput" placeholder="กรอก Passcode เช่น 11" 
-        class="w-full bg-slate-950 border border-slate-800 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-indigo-500 transition text-center font-mono text-indigo-400 font-bold uppercase tracking-widest">
-      <button onclick="searchQueue()" class="bg-indigo-600 hover:bg-indigo-500 text-white px-5 rounded-2xl text-sm font-medium transition flex items-center justify-center">
-        <i class="fa-solid fa-magnifying-glass"></i>
+    <!-- ช่องค้นหาคิวด้วย Passcode 6 หลัก -->
+    <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl flex gap-2">
+      <input type="text" id="passcodeInput" placeholder="กรอก Passcode 6 หลัก..." maxlength="6" 
+        class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm tracking-wider font-mono text-center text-indigo-400 font-bold focus:outline-none focus:border-indigo-500">
+      <button onclick="searchQueue()" class="bg-indigo-600 hover:bg-indigo-500 text-white font-medium px-5 py-2.5 rounded-xl text-sm transition">
+        ค้นหา
       </button>
     </div>
 
-    <!-- ส่วนแสดงข้อมูลคิว -->
-    <div id="resultContainer" class="hidden space-y-4">
-      <div class="bg-slate-950 border border-slate-800 rounded-2xl p-4">
-        
-        <!-- หัวข้อคิว & สถานะ Online -->
-        <div class="flex justify-between items-start mb-3 border-b border-slate-800 pb-3">
-          <div>
-            <span id="queueNoBadge" class="bg-indigo-500/10 text-indigo-400 text-xs font-bold px-2.5 py-1 rounded-full border border-indigo-500/20">
-              คิวที่ #-
-            </span>
-            <h2 id="custNameText" class="text-base font-bold mt-2 text-white">-</h2>
-            <p id="gameIdText" class="text-xs text-slate-400 mt-0.5"><i class="fa-solid fa-gamepad mr-1"></i>ID Game: -</p>
-          </div>
-          <div id="onlineBadge" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700">
-            <span class="w-2 h-2 rounded-full bg-slate-500"></span>
-            Offline
-          </div>
-        </div>
+    <!-- การแสดงผลคิวปัจจุบัน -->
+    <div id="searchResult" class="space-y-4"></div>
 
-        <!-- สถานะการทำงาน -->
-        <div class="mb-4">
-          <span class="text-xs text-slate-500 block mb-1">สถานะปัจจุบัน:</span>
-          <div id="statusBadge" class="inline-block bg-indigo-600/20 text-indigo-300 border border-indigo-500/30 font-medium px-3 py-1 rounded-xl text-xs">
-            กำลังดำเนินการ
-          </div>
-        </div>
+    <hr class="border-slate-800 my-8">
 
-        <!-- รายการงานที่ต้องทำ & Progress -->
-        <div>
-          <div class="flex justify-between text-xs text-slate-400 mb-1.5">
-            <span>ความคืบหน้างาน</span>
-            <span id="progressPercent">0%</span>
-          </div>
-          
-          <!-- Progress Bar -->
-          <div class="w-full bg-slate-900 rounded-full h-2 mb-3 overflow-hidden border border-slate-800">
-            <div id="progressBar" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
-          </div>
+    <!-- ปุ่มเปิดดูประวัติผลงานทั้งหมด -->
+    <div class="text-center">
+      <button onclick="openHistoryModal()" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-emerald-400 font-medium px-6 py-3.5 rounded-2xl text-sm transition shadow-lg flex items-center justify-center gap-2 mx-auto">
+        <i class="fa-solid fa-images"></i> ดูประวัติผลงานทั้งหมดที่ทำเสร็จแล้ว
+      </button>
+    </div>
 
-          <div id="taskList" class="space-y-2">
-            <!-- รายการงานย่อยจะแสดงตรงนี้ -->
-          </div>
-        </div>
+  </div>
 
+  <!-- Modal ป๊อบอัพแสดงประวัติผลงานทั้งหมด -->
+  <div id="historyModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl">
+      
+      <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
+        <h3 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
+          <i class="fa-solid fa-circle-check"></i> ประวัติผลงานที่ส่งเรียบร้อยแล้ว
+        </h3>
+        <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-white transition p-1">
+          <i class="fa-solid fa-xmark text-xl"></i>
+        </button>
       </div>
-    </div>
 
-    <!-- กล่องแจ้งเตือนกรณีไม่พบข้อมูล -->
-    <div id="notFoundBox" class="hidden text-center py-8 text-slate-500 text-xs">
-      <i class="fa-solid fa-circle-exclamation text-2xl mb-2 text-slate-600 block"></i>
-      ไม่พบข้อมูลคิวสำหรับ Passcode นี้
-    </div>
+      <div id="historyContainer" class="overflow-y-auto pr-1 grid grid-cols-1 md:grid-cols-2 gap-4 my-auto">
+        <div class="col-span-full text-center py-12 text-slate-500">
+          <i class="fa-solid fa-circle-notch animate-spin mr-2"></i>กำลังโหลดประวัติผลงาน...
+        </div>
+      </div>
 
-    <!-- โหลดดิ้ง -->
-    <div id="loadingBox" class="hidden text-center py-8 text-slate-500 text-xs">
-      <i class="fa-solid fa-circle-notch animate-spin text-xl text-indigo-500 mb-2 block"></i>
-      กำลังค้นหาข้อมูล...
     </div>
-
   </div>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyQw5wXcf5XcMRs8JcgBNra5KdWT5j0JFxhxsTbUAifSpURG-ENsEJ1Wrc-1eH9lD7o/exec";
 
-    // อ่านค่าตัวแปร ?code= จาก URL (ถ้าน้องส่งลิงก์ให้ลูกค้าดูตรงๆ)
-    window.addEventListener('DOMContentLoaded', () => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const code = urlParams.get('code');
-      if (code) {
-        document.getElementById('passcodeInput').value = code;
-        searchQueue();
+    function openHistoryModal() {
+      document.getElementById('historyModal').classList.remove('hidden');
+      loadHistory();
+    }
+
+    function closeHistoryModal() {
+      document.getElementById('historyModal').classList.add('hidden');
+    }
+
+    async function loadHistory() {
+      const container = document.getElementById('historyContainer');
+      container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500"><i class="fa-solid fa-circle-notch animate-spin mr-2"></i>กำลังโหลดประวัติผลงาน...</div>`;
+
+      try {
+        const res = await fetch(`${API_URL}?action=getHistory`);
+        const history = await res.json();
+        container.innerHTML = '';
+
+        if (!history || history.length === 0) {
+          container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">ยังไม่มีประวัติผลงาน</div>`;
+          return;
+        }
+
+        history.forEach(item => {
+          let tasks = [];
+          if (item.TasksJson) {
+            try { tasks = typeof item.TasksJson === 'string' ? JSON.parse(item.TasksJson) : item.TasksJson; } catch(e){}
+          }
+
+          const card = document.createElement('div');
+          card.className = "bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden p-4 space-y-3 flex flex-col justify-between";
+
+          card.innerHTML = `
+            <div>
+              ${item.WorkUrl ? `
+                <div class="mb-3 overflow-hidden rounded-xl bg-slate-900 border border-slate-800">
+                  <a href="${item.WorkUrl}" target="_blank">
+                    <img src="${item.WorkUrl}" class="w-full h-44 object-cover hover:scale-105 transition duration-300" alt="รูปผลงาน">
+                  </a>
+                </div>
+              ` : `
+                <div class="mb-3 h-32 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">
+                  ไม่มีรูปภาพผลงาน
+                </div>
+              `}
+
+              <div class="flex justify-between items-start gap-2">
+                <span class="text-sm font-semibold text-slate-200"><i class="fa-brands fa-facebook-messenger text-indigo-400 mr-1.5"></i>${item.Contact || 'ลูกค้าทั่วไป'}</span>
+                <span class="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-500/20">
+                  ฿${item.Price || '0'}
+                </span>
+              </div>
+
+              <div class="mt-2 space-y-1">
+                <span class="text-[11px] text-slate-500">รายการสั่งทำ:</span>
+                <ul class="text-xs text-slate-400 space-y-1 list-disc list-inside">
+                  ${tasks.map(t => `<li>${t.name}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          `;
+          container.appendChild(card);
+        });
+
+      } catch(e) {
+        container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-500">ไม่สามารถโหลดประวัติได้</div>`;
       }
-    });
+    }
 
+    // ค้นหาคิวปัจจุบันด้วย Passcode
     async function searchQueue() {
-      const passcode = document.getElementById('passcodeInput').value.trim();
-      if (!passcode) return;
+      const code = document.getElementById('passcodeInput').value.trim();
+      const resContainer = document.getElementById('searchResult');
+      if (!code) return alert("กรุณากรอก Passcode 6 หลัก");
 
-      const resultContainer = document.getElementById('resultContainer');
-      const notFoundBox = document.getElementById('notFoundBox');
-      const loadingBox = document.getElementById('loadingBox');
-
-      resultContainer.classList.add('hidden');
-      notFoundBox.classList.add('hidden');
-      loadingBox.classList.remove('hidden');
+      resContainer.innerHTML = `<div class="text-center py-6 text-slate-500"><i class="fa-solid fa-circle-notch animate-spin mr-2"></i>กำลังค้นหา...</div>`;
 
       try {
         const res = await fetch(API_URL);
         const queues = await res.json();
-        loadingBox.classList.add('hidden');
+        const found = queues.find(q => String(q.Passcode) === code);
 
-        // ค้นหาคิวที่มี Passcode ตรงกัน (เปรียบเทียบแบบไม่สนอักษรตัวเล็ก-ใหญ่)
-        const matched = queues.find(q => String(q.Passcode).trim().toLowerCase() === passcode.toLowerCase());
-
-        if (matched) {
-          document.getElementById('queueNoBadge').innerText = `คิวที่ #${matched.QueueNo}`;
-          document.getElementById('custNameText').innerText = matched.CustomerName || 'ลูกค้า';
-          document.getElementById('gameIdText').innerHTML = `<i class="fa-solid fa-gamepad mr-1"></i>ID Game: ${matched.GameID || '-'}`;
-          document.getElementById('statusBadge').innerText = matched.Status || 'กำลังทำงาน';
-
-          // จัดการแสดงผลสถานะไอดี Online/Offline
-          const isOnline = String(matched.OnlineStatus).toLowerCase() === 'online';
-          const onlineBadge = document.getElementById('onlineBadge');
-          if (isOnline) {
-            onlineBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-            onlineBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Online`;
-          } else {
-            onlineBadge.className = "flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-slate-800 text-slate-400 border border-slate-700";
-            onlineBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-slate-500"></span> Offline`;
-          }
-
-          // แปลงรายการงานย่อย (TasksJson)
-          let tasks = [];
-          if (matched.TasksJson) {
-            try { tasks = typeof matched.TasksJson === 'string' ? JSON.parse(matched.TasksJson) : matched.TasksJson; } catch(e){}
-          }
-
-          const taskList = document.getElementById('taskList');
-          taskList.innerHTML = '';
-          let doneCount = 0;
-
-          if (tasks.length > 0) {
-            tasks.forEach(t => {
-              if (t.done) doneCount++;
-              const item = document.createElement('div');
-              item.className = `flex items-center justify-between p-2.5 rounded-xl border text-xs ${
-                t.done 
-                  ? 'bg-slate-900/50 border-slate-800/80 text-slate-500 line-through' 
-                  : 'bg-slate-900 border-slate-800 text-slate-200'
-              }`;
-              item.innerHTML = `
-                <span>${t.name}</span>
-                <i class="${t.done ? 'fa-solid fa-circle-check text-emerald-500' : 'fa-regular fa-circle text-slate-600'} text-sm"></i>
-              `;
-              taskList.appendChild(item);
-            });
-
-            // คำนวณ % ความคืบหน้า
-            const percent = Math.round((doneCount / tasks.length) * 100);
-            document.getElementById('progressPercent').innerText = `${percent}%`;
-            document.getElementById('progressBar').style.width = `${percent}%`;
-          } else {
-            taskList.innerHTML = `<div class="text-xs text-slate-500 text-center py-2">ไม่มีรายการสั่งทำย่อย</div>`;
-            document.getElementById('progressPercent').innerText = `0%`;
-            document.getElementById('progressBar').style.width = `0%`;
-          }
-
-          resultContainer.classList.remove('hidden');
-        } else {
-          notFoundBox.classList.remove('hidden');
+        if (!found) {
+          resContainer.innerHTML = `<div class="bg-rose-500/10 border border-rose-500/20 text-rose-400 p-4 rounded-xl text-center text-sm">ไม่พบข้อมูลคิวสำหรับ Passcode นี้</div>`;
+          return;
         }
 
-      } catch (err) {
-        loadingBox.classList.add('hidden');
-        notFoundBox.classList.remove('hidden');
+        let tasks = [];
+        if (found.TasksJson) {
+          try { tasks = typeof found.TasksJson === 'string' ? JSON.parse(found.TasksJson) : found.TasksJson; } catch(e){}
+        }
+
+        resContainer.innerHTML = `
+          <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+              <div>
+                <span class="text-xs text-indigo-400 font-bold bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">คิวที่ #${found.QueueNo}</span>
+                <h3 class="text-lg font-bold mt-1">${found.CustomerName}</h3>
+              </div>
+              <div class="text-right">
+                <span class="text-xs text-slate-400 block">สถานะงาน</span>
+                <span class="text-sm font-bold text-amber-400">${found.Status}</span>
+              </div>
+            </div>
+
+            <!-- แสดงรูปสลิป และ รูปภาพผลงาน ในหน้าค้นหาของลูกค้า -->
+            <div class="grid grid-cols-2 gap-3 pt-1">
+              <div>
+                <span class="text-xs text-slate-400 block mb-1.5"><i class="fa-solid fa-receipt text-indigo-400 mr-1"></i>รูปสลิปชำระเงิน</span>
+                ${found.SlipUrl ? `
+                  <a href="${found.SlipUrl}" target="_blank">
+                    <img src="${found.SlipUrl}" class="w-full h-36 object-cover rounded-xl border border-slate-800 hover:opacity-80 transition" alt="สลิป">
+                  </a>
+                ` : `
+                  <div class="h-36 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">ยังไม่มีสลิป</div>
+                `}
+              </div>
+
+              <div>
+                <span class="text-xs text-slate-400 block mb-1.5"><i class="fa-solid fa-image text-emerald-400 mr-1"></i>รูปภาพผลงาน / ส่งงาน</span>
+                ${found.WorkUrl ? `
+                  <a href="${found.WorkUrl}" target="_blank">
+                    <img src="${found.WorkUrl}" class="w-full h-36 object-cover rounded-xl border border-slate-800 hover:opacity-80 transition" alt="รูปงาน">
+                  </a>
+                ` : `
+                  <div class="h-36 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">กำลังดำเนินงาน</div>
+                `}
+              </div>
+            </div>
+
+            <div>
+              <span class="text-xs text-slate-400 block mb-2">ความคืบหน้าการทำงาน:</span>
+              <div class="space-y-1.5">
+                ${tasks.map(t => `
+                  <div class="flex items-center gap-2 text-sm bg-slate-950 p-2.5 rounded-xl border border-slate-800">
+                    <i class="fa-solid ${t.done ? 'fa-circle-check text-emerald-400' : 'fa-circle-notch text-slate-600'}"></i>
+                    <span class="${t.done ? 'line-through text-slate-500' : 'text-slate-300'}">${t.name}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      } catch(e) {
+        resContainer.innerHTML = `<div class="text-center py-6 text-rose-500">เกิดข้อผิดพลาดในการดึงข้อมูล</div>`;
       }
     }
   </script>
