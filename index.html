@@ -14,14 +14,11 @@
 <body class="bg-slate-950 text-slate-100 min-h-screen p-4 md:p-8">
 
   <div class="max-w-2xl mx-auto space-y-6">
-    
-    <!-- หัวข้อระบบ -->
     <div class="text-center space-y-2">
       <h1 class="text-3xl font-bold text-indigo-400"><i class="fa-solid fa-list-check mr-2"></i>ตรวจสอบสถานะคิวงาน</h1>
       <p class="text-slate-400 text-sm">กรอก Passcode 6 หลัก เพื่อค้นหาคิวของคุณ หรือคลิกปุ่มด้านล่างเพื่อดูประวัติงานที่ทำเสร็จแล้ว</p>
     </div>
 
-    <!-- ช่องค้นหาคิวด้วย Passcode 6 หลัก -->
     <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl shadow-xl flex gap-2">
       <input type="text" id="passcodeInput" placeholder="กรอก Passcode 6 หลัก..." maxlength="6" 
         class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm tracking-wider font-mono text-center text-indigo-400 font-bold focus:outline-none focus:border-indigo-500">
@@ -30,98 +27,60 @@
       </button>
     </div>
 
-    <!-- การแสดงผลคิวปัจจุบัน -->
     <div id="searchResult" class="space-y-4"></div>
 
     <hr class="border-slate-800 my-8">
 
-    <!-- ปุ่มเปิดดูประวัติผลงานทั้งหมด -->
     <div class="text-center">
-      <button onclick="openHistoryModal()" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-emerald-400 font-medium px-6 py-3.5 rounded-2xl text-sm transition shadow-lg flex items-center justify-center gap-2 mx-auto">
+      <button onclick="openHistoryModal()" class="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 border border-slate-800 text-emerald-400 font-medium px-6 py-3.5 rounded-2xl text-sm transition shadow-lg flex items-center justify-center gap-2 mx-auto">
         <i class="fa-solid fa-images"></i> ดูประวัติผลงานทั้งหมดที่ทำเสร็จแล้ว
       </button>
     </div>
-
   </div>
 
-  <!-- Modal ป๊อบอัพแสดงประวัติผลงานทั้งหมด -->
   <div id="historyModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
     <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 w-full max-w-3xl max-h-[85vh] flex flex-col shadow-2xl">
-      
       <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-4">
         <h3 class="text-lg font-bold text-emerald-400 flex items-center gap-2">
           <i class="fa-solid fa-circle-check"></i> ประวัติผลงานที่ส่งเรียบร้อยแล้ว
         </h3>
-        <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-white transition p-1">
-          <i class="fa-solid fa-xmark text-xl"></i>
-        </button>
+        <button onclick="closeHistoryModal()" class="text-slate-400 hover:text-white transition p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
       </div>
-
       <div id="historyContainer" class="overflow-y-auto pr-1 grid grid-cols-1 md:grid-cols-2 gap-4 my-auto">
-        <div class="col-span-full text-center py-12 text-slate-500">
-          <i class="fa-solid fa-circle-notch animate-spin mr-2"></i>กำลังโหลดประวัติผลงาน...
-        </div>
+        <div class="col-span-full text-center py-12 text-slate-500"><i class="fa-solid fa-circle-notch animate-spin mr-2"></i>กำลังโหลดประวัติผลงาน...</div>
       </div>
-
     </div>
   </div>
 
   <script>
     const API_URL = "https://script.google.com/macros/s/AKfycbyQw5wXcf5XcMRs8JcgBNra5KdWT5j0JFxhxsTbUAifSpURG-ENsEJ1Wrc-1eH9lD7o/exec";
 
-    function openHistoryModal() {
-      document.getElementById('historyModal').classList.remove('hidden');
-      loadHistory();
-    }
-
-    function closeHistoryModal() {
-      document.getElementById('historyModal').classList.add('hidden');
-    }
+    function openHistoryModal() { document.getElementById('historyModal').classList.remove('hidden'); loadHistory(); }
+    function closeHistoryModal() { document.getElementById('historyModal').classList.add('hidden'); }
 
     async function loadHistory() {
       const container = document.getElementById('historyContainer');
       container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500"><i class="fa-solid fa-circle-notch animate-spin mr-2"></i>กำลังโหลดประวัติผลงาน...</div>`;
-
       try {
         const res = await fetch(`${API_URL}?action=getHistory`);
         const history = await res.json();
         container.innerHTML = '';
-
         if (!history || history.length === 0) {
           container.innerHTML = `<div class="col-span-full text-center py-12 text-slate-500">ยังไม่มีประวัติผลงาน</div>`;
           return;
         }
-
         history.forEach(item => {
           let tasks = [];
-          if (item.TasksJson) {
-            try { tasks = typeof item.TasksJson === 'string' ? JSON.parse(item.TasksJson) : item.TasksJson; } catch(e){}
-          }
-
+          if (item.TasksJson) { try { tasks = typeof item.TasksJson === 'string' ? JSON.parse(item.TasksJson) : item.TasksJson; } catch(e){} }
           const card = document.createElement('div');
           card.className = "bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden p-4 space-y-3 flex flex-col justify-between";
-
           card.innerHTML = `
             <div>
-              ${item.WorkUrl ? `
-                <div class="mb-3 overflow-hidden rounded-xl bg-slate-900 border border-slate-800">
-                  <a href="${item.WorkUrl}" target="_blank">
-                    <img src="${item.WorkUrl}" class="w-full h-44 object-cover hover:scale-105 transition duration-300" alt="รูปผลงาน">
-                  </a>
-                </div>
-              ` : `
-                <div class="mb-3 h-32 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">
-                  ไม่มีรูปภาพผลงาน
-                </div>
-              `}
-
+              ${item.WorkUrl ? `<div class="mb-3 overflow-hidden rounded-xl bg-slate-900 border border-slate-800"><a href="${item.WorkUrl}" target="_blank"><img src="${item.WorkUrl}" class="w-full h-44 object-cover hover:scale-105 transition"></a></div>` : `<div class="mb-3 h-32 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">ไม่มีรูปภาพผลงาน</div>`}
               <div class="flex justify-between items-start gap-2">
                 <span class="text-sm font-semibold text-slate-200"><i class="fa-brands fa-facebook-messenger text-indigo-400 mr-1.5"></i>${item.Contact || 'ลูกค้าทั่วไป'}</span>
-                <span class="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-500/20">
-                  ฿${item.Price || '0'}
-                </span>
+                <span class="bg-emerald-500/10 text-emerald-400 text-xs font-bold px-2.5 py-1 rounded-lg border border-emerald-500/20">฿${item.Price || '0'}</span>
               </div>
-
               <div class="mt-2 space-y-1">
                 <span class="text-[11px] text-slate-500">รายการสั่งทำ:</span>
                 <ul class="text-xs text-slate-400 space-y-1 list-disc list-inside">
@@ -132,13 +91,9 @@
           `;
           container.appendChild(card);
         });
-
-      } catch(e) {
-        container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-500">ไม่สามารถโหลดประวัติได้</div>`;
-      }
+      } catch(e) { container.innerHTML = `<div class="col-span-full text-center py-12 text-rose-500">ไม่สามารถโหลดประวัติได้</div>`; }
     }
 
-    // ค้นหาคิวปัจจุบันด้วย Passcode
     async function searchQueue() {
       const code = document.getElementById('passcodeInput').value.trim();
       const resContainer = document.getElementById('searchResult');
@@ -157,16 +112,23 @@
         }
 
         let tasks = [];
-        if (found.TasksJson) {
-          try { tasks = typeof found.TasksJson === 'string' ? JSON.parse(found.TasksJson) : found.TasksJson; } catch(e){}
-        }
+        if (found.TasksJson) { try { tasks = typeof found.TasksJson === 'string' ? JSON.parse(found.TasksJson) : found.TasksJson; } catch(e){} }
+
+        const isOnline = String(found.OnlineStatus).toLowerCase() === 'online';
+        const onlineBadge = isOnline 
+          ? `<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>Online</span>`
+          : `<span class="bg-slate-800 text-slate-400 border border-slate-700 text-[11px] font-semibold px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-slate-500"></span>Offline</span>`;
 
         resContainer.innerHTML = `
           <div class="bg-slate-900 border border-slate-800 p-5 rounded-2xl space-y-4">
             <div class="flex justify-between items-center border-b border-slate-800 pb-3">
               <div>
-                <span class="text-xs text-indigo-400 font-bold bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">คิวที่ #${found.QueueNo}</span>
-                <h3 class="text-lg font-bold mt-1">${found.CustomerName}</h3>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs text-indigo-400 font-bold bg-indigo-500/10 px-2.5 py-1 rounded-full border border-indigo-500/20">คิวที่ #${found.QueueNo}</span>
+                  ${onlineBadge}
+                </div>
+                <h3 class="text-lg font-bold mt-1.5">${found.CustomerName}</h3>
+                ${found.LastSeen ? `<p class="text-[11px] text-amber-400/90 mt-1"><i class="fa-solid fa-clock mr-1"></i>อัปเดตสถานะล่าสุดเมื่อ: ${found.LastSeen}</p>` : ''}
               </div>
               <div class="text-right">
                 <span class="text-xs text-slate-400 block">สถานะงาน</span>
@@ -174,28 +136,14 @@
               </div>
             </div>
 
-            <!-- แสดงรูปสลิป และ รูปภาพผลงาน ในหน้าค้นหาของลูกค้า -->
             <div class="grid grid-cols-2 gap-3 pt-1">
               <div>
                 <span class="text-xs text-slate-400 block mb-1.5"><i class="fa-solid fa-receipt text-indigo-400 mr-1"></i>รูปสลิปชำระเงิน</span>
-                ${found.SlipUrl ? `
-                  <a href="${found.SlipUrl}" target="_blank">
-                    <img src="${found.SlipUrl}" class="w-full h-36 object-cover rounded-xl border border-slate-800 hover:opacity-80 transition" alt="สลิป">
-                  </a>
-                ` : `
-                  <div class="h-36 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">ยังไม่มีสลิป</div>
-                `}
+                ${found.SlipUrl ? `<a href="${found.SlipUrl}" target="_blank"><img src="${found.SlipUrl}" class="w-full h-36 object-cover rounded-xl border border-slate-800 hover:opacity-80 transition"></a>` : `<div class="h-36 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">ยังไม่มีสลิป</div>`}
               </div>
-
               <div>
                 <span class="text-xs text-slate-400 block mb-1.5"><i class="fa-solid fa-image text-emerald-400 mr-1"></i>รูปภาพผลงาน / ส่งงาน</span>
-                ${found.WorkUrl ? `
-                  <a href="${found.WorkUrl}" target="_blank">
-                    <img src="${found.WorkUrl}" class="w-full h-36 object-cover rounded-xl border border-slate-800 hover:opacity-80 transition" alt="รูปงาน">
-                  </a>
-                ` : `
-                  <div class="h-36 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">กำลังดำเนินงาน</div>
-                `}
+                ${found.WorkUrl ? `<a href="${found.WorkUrl}" target="_blank"><img src="${found.WorkUrl}" class="w-full h-36 object-cover rounded-xl border border-slate-800 hover:opacity-80 transition"></a>` : `<div class="h-36 bg-slate-950 rounded-xl border border-slate-800 flex items-center justify-center text-slate-600 text-xs">กำลังดำเนินงาน</div>`}
               </div>
             </div>
 
@@ -212,9 +160,7 @@
             </div>
           </div>
         `;
-      } catch(e) {
-        resContainer.innerHTML = `<div class="text-center py-6 text-rose-500">เกิดข้อผิดพลาดในการดึงข้อมูล</div>`;
-      }
+      } catch(e) { resContainer.innerHTML = `<div class="text-center py-6 text-rose-500">เกิดข้อผิดพลาดในการดึงข้อมูล</div>`; }
     }
   </script>
 </body>
